@@ -56,7 +56,7 @@ const SVG_GEN = (() => {
     return mm * unitPerMm;
   }
 
-  async function loadFont(fontUrl = '/assets/fonts/Inter-Bold.ttf') {
+  async function loadFont(fontUrl = 'assets/fonts/Inter-Bold.ttf') {
     if (cache.font) return cache.font;
     cache.font = await new Promise((resolve, reject) => {
       opentype.load(fontUrl, (err, font) => (err ? reject(err) : resolve(font)));
@@ -319,7 +319,7 @@ const SVG_GEN = (() => {
   async function getSlots(tipoCartela) {
     if (cache.slots.has(tipoCartela)) return cache.slots.get(tipoCartela);
 
-    const facaUrl = `/assets/facas/faca_${tipoCartela.toLowerCase()}.svg`;
+    const facaUrl = `assets/facas/faca_${tipoCartela.toLowerCase()}.svg`;
     const svgText = await fetchText(facaUrl);
 
     const { wrap, svgEl } = createHiddenSvgContainer(svgText);
@@ -350,7 +350,7 @@ const SVG_GEN = (() => {
     personagemId,         // id do personagem selecionado (opcional)
     personagemUrl,        // caminho da imagem (opcional) ex: "assets/personagens/sonic.png"
     fixarImagem = true,   // embed base64
-    fontUrl = '/assets/fonts/Inter-Bold.ttf',
+    fontUrl = 'assets/fonts/Inter-Bold.ttf',
   }) {
     const { page, slots, facaText } = await getSlots(tipoCartela);
     const font = await loadFont(fontUrl);

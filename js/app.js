@@ -417,7 +417,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 corHex: corUnica.value,
                 personagemUrl,
                 fixarImagem: true,
-                fontUrl: '/assets/fonts/calibri-bold.ttf'
+                fontUrl: 'assets/fonts/calibri-bold.ttf'
             });
 
             // baixa os 2 arquivos
@@ -457,7 +457,7 @@ document.addEventListener("DOMContentLoaded", () => {
             }
         } catch (err) {
             console.error(err);
-            alert("Houve um erro ao gerar o pedido. Verifique sua conexão e tente novamente.");
+            alert(`Houve um erro ao gerar o pedido: ${err.message || 'Erro desconhecido'}. Por favor, tente novamente.`);
         } finally {
             btnWhats.innerText = originalText;
             btnWhats.disabled = false;
