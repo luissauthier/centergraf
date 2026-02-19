@@ -1,567 +1,252 @@
 <!doctype html>
 <html lang="pt-BR">
+
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>CenterGraf — Simulador de Etiquetas</title>
-<link rel="icon" href="assets/favicon.ico" type="image/png">
-<meta name="description" content="Simule etiquetas P (40×10 mm) e G (75×40 mm). Escolha personagem e cor única (texto+borda) e envie o pedido no WhatsApp.">
-<meta name="theme-color" content="#0f1220">
-<style>
-  :root{
-    --bg:#0f1220; --card:#161a2b; --ink:#e8eaf6; --muted:#aab1d1;
-    --accent-gradient: linear-gradient(
-      135deg,
-      #f6e64b,
-      #37a9e1,
-      #f05397
-    ); --radius:14px; --gap:16px;
-  }
-  *{box-sizing:border-box}
-  html,body{margin:0; padding:0; overflow-x:hidden; background:#0b0e1a}
-  body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;background:linear-gradient(180deg,var(--bg),#0b0e1a);color:var(--ink)}
-  main,footer{max-width:1280px;margin:0 auto;padding:24px clamp(16px,3vw,24px);}
-  header h1{margin:0;font-size:22px;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
-  header img.logo{width:36px;height:36px;object-fit:contain;border-radius:8px;background:transparent;flex:0 0 auto}
-  header p{margin:8px 0 0;color:var(--muted);font-size:14px}
-  .header-actions{margin-top:12px; display:flex; gap:10px; flex-wrap:wrap}
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <title>CenterGraf — Simulador de Etiquetas</title>
+  <link rel="icon" href="assets/favicon.ico" type="image/png">
+  <meta name="description"
+    content="Simule etiquetas P (40×10 mm) e G (75×40 mm). Escolha personagem e cor única (texto+borda) e envie o pedido no WhatsApp.">
+  <meta name="theme-color" content="#0f1220">
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/simulador.css">
 
-  .grid{display:grid;gap:var(--gap); max-width:100%}
-  .cols{grid-template-columns:1fr 1fr}
-  @media (max-width:960px){.cols{grid-template-columns:1fr}}
-
-  .card{background:linear-gradient(180deg,rgba(255,255,255,.02),rgba(255,255,255,.01));border:1px solid rgba(255,255,255,.06);border-radius:var(--radius);box-shadow:0 12px 30px rgba(0,0,0,.25);padding:18px; overflow:hidden}
-  .card h2{margin:4px 0 14px;font-size:18px}
-  .row{display:grid;gap:12px;grid-template-columns:repeat(12,1fr);align-items:end; max-width:100%}
-  .row>*{min-width:0}
-  label{font-size:12px;color:var(--muted);display:block;margin:0 0 6px;white-space:nowrap}
-  input[type="text"], select{
-    width:100%;padding:10px 12px;background:#0c0f1c;color:var(--ink);
-    border:1px solid rgba(255,255,255,.08);border-radius:10px;outline:none;min-width:0
-  }
-  input[type="text"]{overflow-x:auto;text-overflow:clip}
-  input[type="color"]{width:100%;height:40px;border-radius:10px;border:1px solid rgba(255,255,255,.08);background:#0c0f1c}
-  .btn{
-    display:inline-flex;
-    align-items:center;
-    justify-content:center;
-    gap:10px;
-    padding:12px 16px;
-    border-radius:12px;
-    border:1px solid rgba(255,255,255,.16);
-    background:#1a1f33;
-    color:var(--ink);
-    font-weight:600;
-    text-decoration:none;
-    cursor:pointer;
-  }
-  .btn.cta{
-    background: linear-gradient(
-      135deg,
-      #f6e64b,
-      #37a9e1,
-      #f05397
-    );
-    color:#111;
-    font-weight:700;
-    border:none;
-  }
-  .btn.whats{
-    background:linear-gradient(160deg,#25D366,#1ebe5d);
-    color:#0a0d18;
-  }
-  .btn.secondary{background:transparent;color:var(--ink)}
-  .btn.block{width:100%;justify-content:center}
-  .btns{display:flex;flex-wrap:wrap;gap:12px}
-  .tag{font-size:12px;color:var(--muted);margin:6px 0 12px}
-
-  /* canvases responsivos e “safe” no mobile */
-  .preview-grid{display:grid;gap:var(--gap);grid-template-columns:1fr 1fr; max-width:100%}
-  .preview-grid canvas{width:100%; height:auto; display:block; background:#fff;border-radius:12px;border:1px solid rgba(255,255,255,.08); max-width:100%}
-  @media (max-width:720px){
-    .preview-grid{grid-template-columns:1fr}
-  }
-
-  .preview-hint{
-    margin-top:12px;
-    font-size:13px;
-    color:var(--muted);
-    background:rgba(255,255,255,.04);
-    border:1px solid rgba(255,255,255,.06);
-    border-radius:12px;
-    padding:10px 12px;
-    text-align:center;
-  }
-
-  /* Galeria com limite e scroll */
-  .gallery-wrap{margin-top:8px}
-  .gallery{display:grid;gap:10px;grid-template-columns:repeat(6,1fr);max-height:240px;overflow:auto;padding:4px}
-  .card-img{background:#0c0f1c;border:1px solid rgba(255,255,255,.08);border-radius:12px;padding:8px;cursor:pointer;display:grid;gap:6px;place-items:center; min-width:0}
-  .card-img img{width:100%;height:92px;object-fit:contain}
-  .card-img span{font-size:12px;color:var(--muted);text-align:center}
-  .card-img.active{outline:2px solid #5dd4b5}
-
-  /* mobile: cards menores e scroll horizontal, sem estourar a largura */
-  @media (max-width:680px){
-    .gallery{display:flex;overflow-x:auto;overflow-y:hidden;gap:10px;max-height:none;padding:6px}
-    .card-img{min-width:88px;max-width:88px;flex:0 0 auto}
-    .card-img img{height:72px}
-  }
-
-  footer{color:var(--muted);font-size:12px;text-align:center}
-
-  /* Prévia primeiro no mobile */
-  @media (max-width:960px){
-    .section-preview{order:-1}
-  }
-
-  /* Seção de avisos */
-  .info{display:grid;gap:10px}
-  .note{font-size:12px;color:var(--muted);background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.06);border-radius:12px;padding:12px}
-  .note strong{color:var(--ink)}
-
-  /* ===== HEADER ===== */
-
-  .site-header::before{
-    content:"";
-    position:absolute;
-    top:0;
-    left:0;
-    width:100%;
-    height:3px;
-    background:linear-gradient(
-      90deg,
-      #f6e64b,
-      #37a9e1,
-      #f05397
-    );
-  }
-
-  .site-header{
-    width:100%;
-    padding: 8px;
-    position:sticky;
-    top:0;
-    z-index:50;
-    background:linear-gradient(180deg,#0f1220,#0b0e1a);
-    border-bottom:1px solid rgba(255,255,255,.06);
-  }
-
-  .header-inner{
-    max-width:1280px; /* mais largo que o conteúdo */
-    margin:0 auto;
-    padding:18px clamp(16px,4vw,32px);
-    display:grid;
-    grid-template-columns:auto 1fr auto;
-    align-items:center;
-    gap:24px;
-  }
-
-  .header-left .logo{
-    height:44px; /* LOGO MAIOR */
-    width:auto;
-  }
-
-  .header-nav{
-    display:flex;
-    justify-content:center;
-    gap:28px;
-  }
-
-  .header-nav a{
-    color:var(--muted);
-    text-decoration:none;
-    font-size:14px;
-    font-weight:500;
-    position:relative;
-  }
-
-  .header-nav a:hover{
-    color:var(--ink);
-  }
-
-  .header-nav a.active{
-    color:var(--ink);
-  }
-
-  .header-nav a.active::after{
-    content:"";
-    position:absolute;
-    left:0;
-    right:0;
-    bottom:-8px;
-    height:2px;
-    background:linear-gradient(90deg,#f6e64b,#37a9e1,#f05397);
-    border-radius:2px;
-  }
-
-  .header-cta{
-    padding:10px 16px;
-    font-size:14px;
-    border-radius:10px;
-  }
-
-  /* mobile */
-  @media (max-width:900px){
-    .header-nav{
-      display:none;
-    }
-  }
-
-  /* ===== LAYOUT GERAL ===== */
-
-.page{
-  max-width:1280px;
-  margin:0 auto;
-  padding:32px clamp(16px,4vw,32px);
-}
-
-.hero{
-  max-width:720px;
-  margin-bottom:48px;
-}
-
-.hero h1{
-  font-size:32px;
-  margin:0 0 12px;
-}
-
-.hero p{
-  color:var(--muted);
-  font-size:16px;
-}
-
-  /* ===== PRODUTO ===== */
-
-  /* ===== PREVIEW EMPILHADO ===== */
-
-  .preview-stack{
-    display:flex;
-    flex-direction:column;
-    align-items:center;
-    gap:32px;
-    margin-top:24px;
-  }
-
-  .preview-item{
-    width:100%;
-    display:flex;
-    flex-direction:column;
-    align-items:center;
-  }
-
-  .preview-item canvas{
-    max-width:100%;
-    height:auto;
-    background:#fff;
-    border-radius:18px;
-    padding:12px;
-  }
-
-  /* ===== ESCALA CONTROLADA DO PREVIEW ===== */
-
-  .preview-stack{
-    display:flex;
-    flex-direction:column;
-    align-items:center;
-    gap:28px;
-    margin-top:24px;
-  }
-
-  /* limita largura máxima visual */
-  .preview-item{
-    width:100%;
-    max-width:400px;
-    display:flex;
-    flex-direction:column;
-    align-items:center;
-  }
-
-  .preview-item canvas{
-    width:100%;
-    height:auto;
-    background:#fff;
-    border-radius:18px;
-    padding:10px;
-  }
-
-  .product-layout{
-    display:grid;
-    grid-template-columns:1fr 1fr;
-    gap:56px;
-    align-items:flex-start;
-  }
-
-  .product-preview h2{
-    font-size:22px;
-  }
-
-  .product-preview h2,
-  .product-config h2{
-    margin:0 0 8px;
-  }
-
-  /* preview mais “produto” */
-  .product-preview canvas{
-    background:#fff;
-    border-radius:14px;
-    margin-bottom:16px;
-  }
-
-  /* configs sem card */
-  .product-config{
-    background:rgba(255,255,255,.02);
-    border:1px solid rgba(255,255,255,.06);
-    border-radius:18px;
-    padding:24px;
-  }
-
-  /* infos */
-  .info-section{
-    margin-top:80px;
-  }
-
-  /* mobile */
-  @media (max-width:960px){
-    .product-layout{
-      grid-template-columns:1fr;
-    }
-
-    .product-preview{
-      order:-1;
-    }
-  }
-
-</style>
 </head>
+
 <body>
 
-<header class="site-header">
-  <div class="header-inner">
-    
-    <!-- esquerda -->
-    <div class="header-left">
-      <img class="logo" src="assets/logo.png" alt="CenterGraf">
+  <header class="site-header">
+    <div class="header-inner">
+
+      <div class="header-left">
+        <img class="logo" src="assets/logo.png" alt="CenterGraf">
+      </div>
+
+      <nav class="header-nav desktop-nav">
+        <a href="/centergraf/catalogo">Catálogo</a>
+        <a href="/centergraf/" class="active">Simulador</a>
+        <a href="/centergraf/#duvidas">Ajuda</a>
+      </nav>
+
+      <div class="header-right desktop-nav">
+        <a href="https://wa.me/555137821165" target="_blank" class="btn whats header-cta">
+          Entre em contato
+        </a>
+      </div>
+
+      <!-- Botão mobile -->
+      <button class="menu-toggle" id="menuToggle" aria-label="Abrir menu">
+        ☰
+      </button>
+
     </div>
+  </header>
 
-    <!-- centro -->
-    <nav class="header-nav">
-      <a href="/centergraf/catalogo">Catálogo</a>
-      <a href="#" class="active">Simulador</a>
-      <a href="#duvidas">Ajuda</a>
-    </nav>
-
-    <!-- direita -->
-    <div class="header-right">
-      <a
-        href="https://wa.me/555137821165"
-        target="_blank"
-        rel="noopener"
-        class="btn whats header-cta"
-      >
-        Entre em contato
-      </a>
-    </div>
-
+  <!-- Menu lateral -->
+  <div class="mobile-menu" id="mobileMenu">
+    <a href="/centergraf/catalogo">Catálogo</a>
+    <a href="/centergraf/">Simulador</a>
+    <a href="/centergraf/#duvidas">Ajuda</a>
+    <a href="https://wa.me/555137821165" target="_blank" class="btn whats block">
+      Entre em contato
+    </a>
   </div>
-</header>
 
-<main class="page">
+  <div class="menu-overlay" id="menuOverlay"></div>
 
-  <!-- HERO -->
-  <section class="hero">
-    <h1>Simulador de etiquetas escolares</h1>
-    <p>
-      Visualize sua etiqueta antes da produção.
-      O ajuste final pode variar conforme impressão e corte.
-    </p>
-  </section>
+  <main>
+
+    <!-- HERO -->
+    <section class="hero">
+      <h1>Simulador de etiquetas escolares</h1>
+      <p>
+        Visualize sua etiqueta antes da produção.
+        O ajuste final pode variar conforme impressão e corte.
+      </p>
+    </section>
 
 
-  <!-- PRODUTO -->
-  <section class="product-layout">
+    <!-- PRODUTO -->
+    <section class="product-layout">
 
-    <!-- ================= PREVIEW (ESQUERDA) ================= -->
-    <div class="product-preview">
+      <!-- ================= PREVIEW (ESQUERDA) ================= -->
+      <div class="product-preview">
 
-      <h2>Prévia</h2>
-      <p class="tag">Proporções reais: P = 40×10 mm • G = 75×40 mm</p>
+        <h2>Prévia</h2>
+        <p class="tag">Proporções reais: P = 40×10 mm • G = 75×40 mm</p>
 
-      <div class="preview-stack">
+        <div class="preview-stack">
 
-        <div class="preview-item">
-          <p class="tag">Modelo P (40×10 mm)</p>
-          <canvas id="canvasP" width="400" height="100"></canvas>
+          <div class="preview-item">
+            <p class="tag">Modelo P (40×10 mm)</p>
+            <canvas id="canvasP" width="400" height="100"></canvas>
+          </div>
+
+          <div class="preview-item">
+            <p class="tag">Modelo G (75×40 mm)</p>
+            <canvas id="canvasG" width="750" height="400"></canvas>
+          </div>
+
         </div>
 
-        <div class="preview-item">
-          <p class="tag">Modelo G (75×40 mm)</p>
-          <canvas id="canvasG" width="750" height="400"></canvas>
+        <div class="preview-hint">
+          Os tamanhos da fonte e da imagem poderão ser ajustados na versão final.
+          Para outras personalizações, entre em contato pelo WhatsApp.
         </div>
 
       </div>
 
-      <div class="preview-hint">
-        Os tamanhos da fonte e da imagem poderão ser ajustados na versão final.
-        Para outras personalizações, entre em contato pelo WhatsApp.
-      </div>
-
-    </div>
 
 
+      <!-- ================= CONFIGURAÇÕES (DIREITA) ================= -->
+      <div class="product-config">
 
-    <!-- ================= CONFIGURAÇÕES (DIREITA) ================= -->
-    <div class="product-config">
+        <h2>Personalize sua etiqueta</h2>
 
-      <h2>Personalize sua etiqueta</h2>
+        <!-- Nome + Cor -->
+        <div class="row">
+          <div style="grid-column:span 9;">
+            <label for="nome">Nome na etiqueta</label>
+            <input id="nome" type="text" placeholder="Ex.: João Medeiros da Silva" maxlength="48"
+              value="João Medeiros da Silva" autocomplete="name">
+          </div>
 
-      <!-- Nome + Cor -->
-      <div class="row">
-        <div style="grid-column:span 9;">
-          <label for="nome">Nome na etiqueta</label>
-          <input id="nome" type="text"
-            placeholder="Ex.: João Medeiros da Silva"
-            maxlength="48"
-            value="João Medeiros da Silva"
-            autocomplete="name">
+          <div style="grid-column:span 3;">
+            <label for="corUnica">Cor (texto + borda)</label>
+            <input id="corUnica" type="color" value="#0000FF">
+          </div>
         </div>
 
-        <div style="grid-column:span 3;">
-          <label for="corUnica">Cor (texto + borda)</label>
-          <input id="corUnica" type="color" value="#0000FF">
+
+        <!-- Checkboxes -->
+        <div class="row" style="margin-top:12px">
+          <div style="grid-column:span 6;">
+            <label style="display:flex;align-items:center;gap:8px;">
+              <input id="chkTextos" type="checkbox">
+              Textos diferentes (P e G)
+            </label>
+          </div>
+
+          <div style="grid-column:span 6;">
+            <label style="display:flex;align-items:center;gap:8px;">
+              <input id="chkFixarCor" type="checkbox">
+              Fixar cor ao trocar personagem
+            </label>
+          </div>
+        </div>
+
+
+        <!-- Texto G -->
+        <div id="wrapNomeG" class="row" style="margin-top:12px; display:none">
+          <div style="grid-column:span 12;">
+            <label for="nomeG">Texto da etiqueta G (75×40 mm)</label>
+            <input id="nomeG" type="text" placeholder="Ex.: João Medeiros da Silva" maxlength="60"
+              value="João Medeiros da Silva">
+          </div>
+        </div>
+
+
+        <!-- Cartela -->
+        <div class="row" style="margin-top:12px">
+          <div style="grid-column:span 12;">
+            <label for="cartela">Tipo de cartela</label>
+            <select id="cartela">
+              <option value="A3 MIX">A3 MIX (120 P + 12 G)</option>
+              <option value="A3 P">A3 P (225 P)</option>
+              <option value="A3 G">A3 G (27 G)</option>
+            </select>
+          </div>
+        </div>
+
+
+        <!-- Personagens -->
+        <div style="margin-top:20px">
+          <label>Escolha um personagem</label>
+          <div class="tag">
+            Para modelos personalizados, entre em contato pelo WhatsApp.
+          </div>
+
+          <div class="gallery-wrap">
+            <div id="galeria" class="gallery"></div>
+          </div>
+        </div>
+
+
+        <!-- Upload -->
+        <input id="imgUpload" type="file" accept="image/png,image/jpeg,image/webp" style="display:none" />
+
+        <div class="note" style="margin-top:14px">
+          <strong>Quer usar sua própria imagem?</strong><br>
+          Selecione o card <strong>Minha imagem</strong> e envie um arquivo.
+          <br>Recomendado: 800×800 px ou maior.
+        </div>
+
+
+        <!-- Botões -->
+        <div class="btns" style="margin-top:24px">
+          <button id="btnWhats" class="btn whats" type="button">
+            Gerar arte e enviar no Whats
+          </button>
+
+          <button id="btnDownload" class="btn secondary" type="button">
+            Baixar prévia (PNG)
+          </button>
+
+          <button id="btnReset" class="btn secondary" type="button">
+            Resetar
+          </button>
+        </div>
+
+      </div>
+
+    </section>
+
+
+
+    <!-- ================= INFORMAÇÕES ================= -->
+    <section id="duvidas" class="info-section">
+
+      <h2>Dúvidas, personalizações e cuidados</h2>
+
+      <div class="info">
+        <div class="note">
+          <strong>Outras personalizações:</strong>
+          Trabalhamos com linha própria e temas sob consulta.
+          Fale conosco pelo WhatsApp para cores e variações.
+        </div>
+
+        <div class="note">
+          <strong>Cuidados com o adesivo:</strong>
+          Após a entrega, manter em local seco e arejado.
+          Evite calor e umidade excessivos.
         </div>
       </div>
 
+    </section>
 
-      <!-- Checkboxes -->
-      <div class="row" style="margin-top:12px">
-        <div style="grid-column:span 6;">
-          <label style="display:flex;align-items:center;gap:8px;">
-            <input id="chkTextos" type="checkbox">
-            Textos diferentes (P e G)
-          </label>
-        </div>
+  </main>
 
-        <div style="grid-column:span 6;">
-          <label style="display:flex;align-items:center;gap:8px;">
-            <input id="chkFixarCor" type="checkbox">
-            Fixar cor ao trocar personagem
-          </label>
-        </div>
-      </div>
+  <footer>© lhdigital — sites personalizados</footer>
 
+  <!-- tenta usar Calibri local -->
+  <style>
+    @font-face {
+      font-family: "Calibri";
+      src: local("Calibri Bold"), local("Calibri");
+      font-weight: 700;
+      font-style: normal;
+    }
+  </style>
 
-      <!-- Texto G -->
-      <div id="wrapNomeG" class="row" style="margin-top:12px; display:none">
-        <div style="grid-column:span 12;">
-          <label for="nomeG">Texto da etiqueta G (75×40 mm)</label>
-          <input id="nomeG" type="text"
-            placeholder="Ex.: João Medeiros da Silva"
-            maxlength="60"
-            value="João Medeiros da Silva">
-        </div>
-      </div>
+  <script src="https://unpkg.com/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+  <script src="https://unpkg.com/svg2pdf.js@2.3.0/dist/svg2pdf.umd.min.js"></script>
+  <script src="https://unpkg.com/opentype.js@latest/dist/opentype.min.js"></script>
 
-
-      <!-- Cartela -->
-      <div class="row" style="margin-top:12px">
-        <div style="grid-column:span 12;">
-          <label for="cartela">Tipo de cartela</label>
-          <select id="cartela">
-            <option value="A3 MIX">A3 MIX (120 P + 12 G)</option>
-            <option value="A3 P">A3 P (225 P)</option>
-            <option value="A3 G">A3 G (27 G)</option>
-          </select>
-        </div>
-      </div>
-
-
-      <!-- Personagens -->
-      <div style="margin-top:20px">
-        <label>Escolha um personagem</label>
-        <div class="tag">
-          Para modelos personalizados, entre em contato pelo WhatsApp.
-        </div>
-
-        <div class="gallery-wrap">
-          <div id="galeria" class="gallery"></div>
-        </div>
-      </div>
-
-
-      <!-- Upload -->
-      <input
-        id="imgUpload"
-        type="file"
-        accept="image/png,image/jpeg,image/webp"
-        style="display:none"
-      />
-
-      <div class="note" style="margin-top:14px">
-        <strong>Quer usar sua própria imagem?</strong><br>
-        Selecione o card <strong>Minha imagem</strong> e envie um arquivo.
-        <br>Recomendado: 800×800 px ou maior.
-      </div>
-
-
-      <!-- Botões -->
-      <div class="btns" style="margin-top:24px">
-        <button id="btnWhats" class="btn whats" type="button">
-          Gerar arte e enviar no Whats
-        </button>
-
-        <button id="btnDownload" class="btn secondary" type="button">
-          Baixar prévia (PNG)
-        </button>
-
-        <button id="btnReset" class="btn secondary" type="button">
-          Resetar
-        </button>
-      </div>
-
-    </div>
-
-  </section>
-
-
-
-  <!-- ================= INFORMAÇÕES ================= -->
-  <section id="duvidas" class="info-section">
-
-    <h2>Dúvidas, personalizações e cuidados</h2>
-
-    <div class="info">
-      <div class="note">
-        <strong>Outras personalizações:</strong>
-        Trabalhamos com linha própria e temas sob consulta.
-        Fale conosco pelo WhatsApp para cores e variações.
-      </div>
-
-      <div class="note">
-        <strong>Cuidados com o adesivo:</strong>
-        Após a entrega, manter em local seco e arejado.
-        Evite calor e umidade excessivos.
-      </div>
-    </div>
-
-  </section>
-
-</main>
-
-<footer>© lhdigital — sites personalizados</footer>
-
-<!-- tenta usar Calibri local -->
-<style>
-  @font-face { font-family: "Calibri"; src: local("Calibri Bold"), local("Calibri"); font-weight: 700; font-style: normal; }
-</style>
-
-<script src="https://unpkg.com/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
-<script src="https://unpkg.com/svg2pdf.js@2.3.0/dist/svg2pdf.umd.min.js"></script>
-<script src="https://unpkg.com/opentype.js@latest/dist/opentype.min.js"></script>
-
-<script src="js/previewCanvas.js"></script>
-<script src="js/svgGenerator.js"></script>
-<script src="js/app.js"></script>
+  <script src="js/previewCanvas.js"></script>
+  <script src="js/svgGenerator.js"></script>
+  <script src="js/app.js"></script>
 
 </body>
+
 </html>

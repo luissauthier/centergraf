@@ -181,6 +181,22 @@ document.addEventListener("DOMContentLoaded", () => {
     let personagemAtual = CHAR_LIST[0]; // começa em "Nenhum"
     let imgCache = {};
 
+    const toggle = document.getElementById('menuToggle');
+    const menu = document.getElementById('mobileMenu');
+    const overlay = document.getElementById('menuOverlay');
+
+    toggle.addEventListener('click', () => {
+    menu.classList.toggle('open');
+    overlay.classList.toggle('show');
+    document.body.style.overflow = menu.classList.contains('open') ? 'hidden' : '';
+    });
+
+    overlay.addEventListener('click', () => {
+    menu.classList.remove('open');
+    overlay.classList.remove('show');
+    document.body.style.overflow = '';
+    });
+
     function hexToRgb(hex) {
     const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
     return result ? {

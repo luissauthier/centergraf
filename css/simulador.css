@@ -1,0 +1,384 @@
+/* =========================
+   SIMULADOR — estilos específicos
+   ========================= */
+
+/* =========================
+   Layout geral
+   ========================= */
+
+.page {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 32px clamp(16px, 4vw, 32px);
+}
+
+.hero {
+  max-width: 720px;
+  margin-bottom: 48px;
+}
+
+.hero h1 {
+  font-size: 32px;
+  margin: 0 0 12px;
+}
+
+.hero p {
+  color: var(--muted);
+  font-size: 16px;
+}
+
+/* =========================
+   Card base
+   ========================= */
+
+.card {
+  background: linear-gradient(180deg, rgba(255, 255, 255, .02), rgba(255, 255, 255, .01));
+  border: 1px solid rgba(255, 255, 255, .06);
+  border-radius: var(--radius);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, .25);
+  padding: 18px;
+}
+
+/* IMPORTANTE:
+   Card do simulador NÃO pode cortar conteúdo */
+.product-config.card,
+.product-config {
+  overflow: visible;
+  min-width: 0;
+}
+
+.card h2 {
+  margin: 4px 0 14px;
+  font-size: 18px;
+}
+
+/* =========================
+   Form layout
+   ========================= */
+
+.row {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(12, 1fr);
+  align-items: end;
+}
+
+.row>* {
+  min-width: 0;
+}
+
+label {
+  font-size: 12px;
+  color: var(--muted);
+  display: block;
+  margin: 0 0 6px;
+  white-space: nowrap;
+}
+
+input[type="text"],
+select {
+  width: 100%;
+  padding: 10px 12px;
+  background: #0c0f1c;
+  color: var(--ink);
+  border: 1px solid rgba(255, 255, 255, .08);
+  border-radius: 10px;
+  outline: none;
+}
+
+input[type="color"] {
+  width: 100%;
+  height: 40px;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, .08);
+  background: #0c0f1c;
+  padding: 0;
+  overflow: hidden;
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+input[type="color"]::-webkit-color-swatch-wrapper {
+  padding: 0;
+}
+
+input[type="color"]::-webkit-color-swatch {
+  border: none;
+  border-radius: 8px;
+}
+
+/* =========================
+   Botões
+   ========================= */
+
+.btns {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.btn.block {
+  width: 100%;
+  justify-content: center;
+}
+
+.tag {
+  font-size: 12px;
+  color: var(--muted);
+  margin: 6px 0 12px;
+}
+
+/* =========================
+   Produto (preview + config)
+   ========================= */
+
+.product-layout {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 56px;
+  align-items: flex-start;
+}
+
+.product-preview h2 {
+  font-size: 22px;
+  margin: 0 0 8px;
+}
+
+.product-config {
+  background: rgba(255, 255, 255, .02);
+  border: 1px solid rgba(255, 255, 255, .06);
+  border-radius: 18px;
+  padding: 24px;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+/* =========================
+   Preview
+   ========================= */
+
+.preview-stack {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 28px;
+  margin-top: 24px;
+}
+
+.preview-item {
+  width: 100%;
+  max-width: 400px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.preview-item canvas {
+  width: 100%;
+  height: auto;
+  background: #fff;
+  border-radius: 18px;
+  padding: 10px;
+}
+
+.preview-hint {
+  margin-top: 12px;
+  font-size: 13px;
+  color: var(--muted);
+  background: rgba(255, 255, 255, .04);
+  border: 1px solid rgba(255, 255, 255, .06);
+  border-radius: 12px;
+  padding: 10px 12px;
+  text-align: center;
+}
+
+/* =========================
+   Galeria de personagens
+   ========================= */
+
+.gallery-wrap {
+  margin-top: 8px;
+  overflow: hidden;
+  max-width: 100%;
+}
+
+.gallery {
+  display: grid;
+  gap: 10px;
+  grid-template-columns: repeat(6, 1fr);
+  max-height: 240px;
+  overflow: auto;
+  padding: 4px;
+  max-width: 100%;
+}
+
+.card-img {
+  background: #0c0f1c;
+  border: 1px solid rgba(255, 255, 255, .08);
+  border-radius: 12px;
+  padding: 8px;
+  cursor: pointer;
+  display: grid;
+  gap: 6px;
+  place-items: center;
+}
+
+.card-img {
+  min-width: 0;
+  min-inline-size: 0;
+  max-width: 100%;
+}
+
+.card-img {
+  appearance: none;
+  -webkit-appearance: none;
+}
+
+.card-img img {
+  width: 100%;
+  height: 92px;
+  object-fit: contain;
+}
+
+.card-img span {
+  font-size: 12px;
+  color: var(--muted);
+  text-align: center;
+}
+
+.card-img.active {
+  outline: 2px solid #5dd4b5;
+}
+
+/* =========================
+   Info section
+   ========================= */
+
+.info-section {
+  margin-top: 80px;
+}
+
+.info {
+  display: grid;
+  gap: 10px;
+}
+
+.note {
+  font-size: 12px;
+  color: var(--muted);
+  background: rgba(255, 255, 255, .04);
+  border: 1px solid rgba(255, 255, 255, .06);
+  border-radius: 12px;
+  padding: 12px;
+}
+
+.note strong {
+  color: var(--ink);
+}
+
+/* =========================
+   MOBILE
+   ========================= */
+
+@media (max-width:960px) {
+
+  .page {
+    padding: 24px 16px;
+  }
+
+  .hero {
+    margin-bottom: 32px;
+  }
+
+  .hero h1 {
+    font-size: 24px;
+    line-height: 1.2;
+  }
+
+  .hero p {
+    font-size: 14px;
+  }
+
+  .product-layout {
+    display: flex;
+    flex-direction: column;
+    gap: 40px;
+  }
+
+  .product-preview {
+    order: -1;
+  }
+
+  .preview-stack {
+    gap: 20px;
+  }
+
+  .preview-item {
+    max-width: 100%;
+  }
+
+  .preview-item canvas {
+    padding: 6px;
+    border-radius: 14px;
+  }
+
+  .row {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+
+  .row>div {
+    grid-column: auto !important;
+  }
+
+  .btns {
+    flex-direction: column;
+  }
+
+  .btns .btn {
+    width: 100%;
+  }
+
+}
+
+/* =========================
+   MOBILE — Galeria horizontal
+   ========================= */
+
+@media (max-width:680px) {
+
+  .gallery-wrap {
+    width: 100%;
+    overflow: hidden;
+  }
+
+  .gallery {
+    display: flex;
+    gap: 12px;
+    width: 100%;
+    overflow-x: auto;
+    overflow-y: hidden;
+    padding: 8px 4px 12px;
+    scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .gallery::-webkit-scrollbar {
+    display: none;
+  }
+
+  .card-img {
+    flex: 0 0 88px;
+    width: 88px;
+    max-width: 88px;
+    scroll-snap-align: start;
+  }
+
+  .card-img img {
+    width: 100%;
+    height: 72px;
+    object-fit: contain;
+  }
+
+}
