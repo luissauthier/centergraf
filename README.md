@@ -1,1 +1,1 @@
-https://luissauthier.github.io/lhdigital-etiquetas/
+https://luissauthier.github.io/centergraf/
