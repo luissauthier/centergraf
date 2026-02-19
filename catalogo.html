@@ -1,0 +1,223 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>lhdigital — Catálogo de Etiquetas</title>
+<link rel="icon" href="assets/favicon.ico" type="image/png">
+<meta name="description" content="Catálogo de etiquetas por segmentos (Pré-escolar, Fundamental I, Tweens, Neutros).">
+<meta name="theme-color" content="#0f1220">
+<style>
+:root{--bg:#0f1220;--ink:#e8eaf6;--muted:#aab1d1;--card:#161a2b;--accent:#7aa5ff;--gap:16px;--radius:14px}
+*{box-sizing:border-box}
+body{margin:0;background:linear-gradient(180deg,#0f1220,#0b0e1a);color:var(--ink);font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif}
+main,header,footer{max-width:1100px;margin:0 auto;padding:24px clamp(16px,3vw,24px)}
+header h1{margin:0;font-size:22px}
+.controls{display:flex;gap:10px;flex-wrap:wrap;margin:12px 0}
+select,input[type="search"]{background:#0c0f1c;color:var(--ink);border:1px solid rgba(255,255,255,.1);border-radius:10px;padding:10px 12px}
+.grid{display:grid;gap:var(--gap);grid-template-columns:repeat(3,1fr)}
+@media (max-width:980px){.grid{grid-template-columns:repeat(2,1fr)}}
+@media (max-width:640px){.grid{grid-template-columns:1fr}}
+footer{color:var(--muted);font-size:12px;text-align:center}
+.card{background:linear-gradient(180deg,rgba(255,255,255,.02),rgba(255,255,255,.01));border:1px solid rgba(255,255,255,.08);border-radius:var(--radius);padding:14px;display:flex;flex-direction:column;gap:10px}
+.card .thumb{background:#0c0f1c;border:1px solid rgba(255,255,255,.08);border-radius:12px;display:grid;place-items:center;overflow:hidden}
+.card .thumb img{max-width:100%;max-height:85%;object-fit:contain}
+.title{display:flex;align-items:center;gap:8px;font-weight:700}
+.badges{display:flex;gap:6px;flex-wrap:wrap}
+.badge{font-size:11px;color:var(--muted);border:1px solid rgba(255,255,255,.12);border-radius:999px;padding:4px 8px}
+.actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:auto}
+.btn{display:inline-flex;align-items:center;gap:8px;padding:10px 12px;border-radius:12px;border:1px solid rgba(255,255,255,.14);background:linear-gradient(160deg,var(--accent),#5dd4b5);color:#0a0d18;text-decoration:none;font-weight:700}
+.btn.secondary{background:transparent;color:var(--ink)}
+.section-title{margin:24px 0 8px;font-size:14px;color:var(--muted)}
+hr{border:none;height:1px;background:rgba(255,255,255,.08);margin:14px 0}
+.note{font-size:12px;color:var(--muted);background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.06);border-radius:12px;padding:10px 12px}
+</style>
+</head>
+<body>
+<header>
+  <h1>Catálogo de Etiquetas — 2026</h1>
+  <p class="note">Use os filtros abaixo para explorar. Clique em “Ver no simulador” para abrir o modelo já selecionado. As imagens exibem uma prévia; os tamanhos de fonte e imagem podem ser ajustados na versão final.</p>
+  <div class="controls">
+      <a id="backSim" class="btn" href="/lhdigital-etiquetas/" rel="noopener">Voltar ao simulador</a>
+      <select id="catSelect" aria-label="Filtrar por categoria">
+      <option value="">Categoria: Todas</option>
+      <option>Desenhos & Séries</option>
+      <option>Super-heróis</option>
+      <option>Jogos</option>
+      <option>Times</option>
+      <option>Carros & Veículos</option>
+      <option>Fofo/Cute</option>
+      <option>Neutros</option>
+    </select>
+    <select id="tierSelect" aria-label="Filtrar por prioridade">
+      <option value="">Prioridade: Todas</option>
+      <option>Tier A</option>
+      <option>Tier B</option>
+      <option>Tier C</option>
+    </select>
+    <input id="q" type="search" placeholder="Buscar por nome/tema…" aria-label="Buscar">
+  </div>
+</header>
+
+<main>
+  <div id="list" class="grid" aria-live="polite"></div>
+</main>
+
+<footer>© lhdigital — etiquetas escolares</footer>
+
+<script>
+// CONFIG
+let WHATSAPP_NUMBER = '5551993745430';
+const SIMULADOR_URL = '/lhdigital-etiquetas/';
+
+// --- CONTROLE DE PARÂMETROS (herda e propaga entre telas)
+const qs = new URLSearchParams(location.search);
+
+const modoPapelaria = qs.has('papelaria') || qs.get('hidewhats') === '1';
+// --- zap opcional (coerente com o simulador)
+if (qs.has('zap')) {
+  WHATSAPP_NUMBER = qs.get('zap').replace(/[^\d]/g, '');
+}
+const passParams = new URLSearchParams();
+['papelaria','hidewhats','zap'].forEach(k=>{
+  if (qs.has(k)) passParams.set(k, qs.get(k) || '');
+});
+
+// Preenche o "Voltar ao simulador" já com os mesmos parâmetros
+const back = document.getElementById('backSim');
+if (back) back.href = SIMULADOR_URL + (passParams.toString() ? `?${passParams}` : '');
+
+
+// DATA — mapeado para segmentos/tier/tags segundo o guia.
+const ITEMS = [
+  // Desenhos & Séries
+  I('bluey','Bluey','bluey.png','Desenhos & Séries','Tier A',['azul','família'],'#92C6EB'),
+  I('chase','Chase','chase.png','Desenhos & Séries','Tier A',['infantil','patrulha'],'#1B2B4E'),
+  I('skye','Skye','skye.png','Desenhos & Séries','Tier A',['infantil','patrulha'],'#EC5986'),
+  I('skye2','Skye (variante)','skye2.png','Desenhos & Séries','Tier A',['infantil','patrulha'],'#EC5986'),
+  I('marshal','Marshal','marshal.png','Desenhos & Séries','Tier A',['infantil','patrulha'],'#E5050F'),
+  I('peppa','Peppa','peppa.png','Desenhos & Séries','Tier A',['infantil'],'#FFB0DF'),
+  I('gabbys','Gabby’s Dollhouse','gabbys.png','Desenhos & Séries','Tier B',['lilás'],'#A600E2'),
+  I('frozen','Frozen','frozen.png','Desenhos & Séries','Tier B',['aquarela','azul'],'#6ED3E0'),
+  I('moana','Moana','moana.png','Desenhos & Séries','Tier B',['tropical'],'#D63A2E'),
+  I('barbie','Barbie','barbie.png','Desenhos & Séries','Tier B',['rosa'],'#E240A3'),
+  I('ladybug','Ladybug','ladybug.png','Desenhos & Séries','Tier B',['vermelho','bolinhas'],'#E5050F'),
+  I('stitch','Stitch','stitch.png','Desenhos & Séries','Tier B',['kawaii'],'#4A7BB5'),
+  I('stitch-angel','Stitch & Angel','stitch-angel.png','Desenhos & Séries','Tier B',['kawaii'],'#E39EC7'),
+  I('galinha-pintadinha','Galinha Pintadinha','galinha-pintadinha.png','Desenhos & Séries','Tier A',['infantil','música'],'#0D80BF'),
+  I('baby-shark','Baby Shark','baby-shark.png','Desenhos & Séries','Tier B',['infantil','música'],'#FAD61E'),
+  I('princesa-sofia','Princesa Sofia','princesa-sofia.png','Desenhos & Séries','Tier B',['princesa','lilás'],'#A600E2'),
+  I('guerreiraskpop','Guerreiras do KPop','guerreiraskpop.png','Desenhos & Séries','Tier B',['infantil','rosa'],'#EC268F'),
+
+  // Super-heróis
+  I('homem-aranha','Homem-Aranha','homem-aranha.png','Super-heróis','Tier A',['hq','vermelho'],'#E5050F'),
+  I('homem-aranha2','Homem-Aranha (var.)','homem-aranha2.png','Super-heróis','Tier A',['hq'],'#CF2A20'),
+  I('homem-ferro','Homem de Ferro','homem-ferro.png','Super-heróis','Tier A',['vingadores','vermelho'],'#E5050F'),
+  I('hulk','Hulk','hulk.png','Super-heróis','Tier A',['vingadores','verde'],'#5C8F4C'),
+  I('capitao-america','Capitão América','capitao-america.png','Super-heróis','Tier A',['vingadores','azul'],'#0D80BF'),
+  I('hulk-baby','Hulk Baby','hulk-baby.png','Super-heróis','Tier B',['vingadores','fofo'],'#5C8F4C'),
+
+  // Jogos
+  I('minecraft','Minecraft','minecraft.png','Jogos','Tier A',['pixel'],'#4DAC22'),
+  I('roblox','Roblox','roblox.png','Jogos','Tier A',['avatar'],'#E5050F'),
+  I('sonic','Sonic','sonic.png','Jogos','Tier A',['velocidade','anéis'],'#14489F'),
+  I('sonic2','Sonic (variante)','sonic2.png','Jogos','Tier A',['velocidade','anéis'],'#3C6DFB'),
+  I('mario','Super Mario','mario.png','Jogos','Tier A',['clássico'],'#E5050F'),
+  I('luigi','Luigi','luigi.png','Jogos','Tier A',['clássico'],'#4DAC22'),
+
+  // Pokémon
+  I('pikachu','Pikachu','pikachu.png','Jogos','Tier A',['pokemon','amarelo'],'#FAD61E'),
+  I('bulbasaur','Bulbasaur','bulbasaur.png','Jogos','Tier A',['pokemon','verde'],'#79A75B'),
+  I('squirtle','Squirtle','squirtle.png','Jogos','Tier A',['pokemon','azul'],'#52A3A9'),
+  I('charmander','Charmander','charmander.png','Jogos','Tier A',['pokemon','laranja'],'#F47932'),
+  I('eevee','Eevee','eevee.png','Jogos','Tier A',['pokemon','marrom'],'#BD8946'),
+
+  // Times
+  I('gremio','Grêmio','gremio.png','Times','Tier A',['futebol','azul'],'#0D80BF'),
+  I('inter','Inter','inter.png','Times','Tier A',['futebol','vermelho'],'#E5050F'),
+
+  // Carros & Veículos
+  I('mcqueen','McQueen','mcqueen.png','Carros & Veículos','Tier A',['corrida'],'#E5050F'),
+  I('carro-azul','Carro Azul','carro-azul.png','Carros & Veículos','Tier A',['esportivo'],'#2A7CD3'),
+  I('carro-laranja','Carro Laranja','carro-laranja.png','Carros & Veículos','Tier A',['muscle'],'#F58634'),
+
+  // Fofo/Cute
+  I('minnie','Minnie','minnie.png','Fofo/Cute','Tier A',['poás','rosa'],'#E5050F'),
+  I('mickey','Mickey','mickey.png','Fofo/Cute','Tier A',['clássico'],'#E5050F'),
+  I('hello-kitty','Hello Kitty','hello-kitty.png','Fofo/Cute','Tier B',['candy'],'#EE3E41'),
+  I('mickey-rosto','Mickey (rosto)','mickey-rosto.png','Fofo/Cute','Tier B',['clássico'],'#E5050F'),
+  I('minnie-rosto','Minnie (rosto)','minnie-rosto.png','Fofo/Cute','Tier B',['poás'],'#E5050F'),
+
+  // Neutros
+  I('unicornio','Unicórnio','unicornio.png','Neutros','Tier C',['pastel'],'#DFAFF6'),
+  I('unicornio2','Unicórnio 2','unicornio2.png','Neutros','Tier C',['pastel'],'#EC268F'),
+  I('capivara','Capivara Fofa','capivara.png','Neutros','Tier A',['meme','brasil'],'#F58634'),
+  I('cowboy','Cowboy','cowboy.png','Neutros','Tier B',['temático'],'#A96A23'),
+  I('dino','Dino','dino.png','Neutros','Tier B',['dinossauro','verde'],'#4DAC22'),
+  I('dinossauro','Dinossauro','dinossauro.png','Neutros','Tier B',['dino','jurassic'],'#79A75B'),
+];
+
+function I(id,nome,arquivo,segmento,tier,tags=[],cor=null){
+  return { id,nome,arquivo,segmento,tier,tags,cor };
+}
+
+const listEl = document.getElementById('list');
+const segSel = document.getElementById('catSelect');
+const tierSel = document.getElementById('tierSelect');
+const q = document.getElementById('q');
+
+function render(){
+  const seg = segSel.value;
+  const tier = tierSel.value;
+  const term = q.value.toLowerCase().trim();
+
+  const data = ITEMS.filter(it =>
+    (!seg || it.segmento === seg) &&
+    (!tier || it.tier === tier) &&
+    (!term ||
+      it.nome.toLowerCase().includes(term) ||
+      it.tags.some(t => String(t).toLowerCase().includes(term))
+    )
+  );
+
+  listEl.innerHTML = '';
+  data.forEach(it => listEl.appendChild(card(it)));
+  if (!data.length) {
+    listEl.innerHTML = `<p class="note">Nenhum item encontrado com os filtros atuais.</p>`;
+  }
+}
+
+function card(it){
+  const el = document.createElement('article'); el.className='card';
+
+  // Monta link para o simulador preservando parâmetros + personagem
+  const simQS = new URLSearchParams(passParams);
+  simQS.set('personagem', it.id);
+  if (it.cor) simQS.set('cor', it.cor);
+  const simHref = `${SIMULADOR_URL}?${simQS.toString()}`;
+
+  // Link do Whats (mostra somente se não estiver em modo papelaria)
+  const whatsHref = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent('Quero etiquetas do tema: '+it.nome)}`;
+
+  el.innerHTML = `
+    <div class="thumb"><img alt="${it.nome}" src="assets/etiquetas/${it.id}_preview.png" loading="lazy"></div>
+    <div class="title">${it.nome}</div>
+    <div class="badges">
+      <span class="badge">${it.segmento}</span>
+      <span class="badge">${it.tier}</span>
+      ${it.tags.map(t=>`<span class="badge">${t}</span>`).join('')}
+    </div>
+    <div class="actions">
+      <a class="btn" href="${simHref}" rel="noopener">Ver no simulador</a>
+      ${!modoPapelaria ? `<a class="btn secondary" href="${whatsHref}" target="_blank" rel="noopener">Pedir no Whats</a>` : ''}
+    </div>`;
+  return el;
+}
+
+segSel.addEventListener('change', render);
+ tierSel.addEventListener('change', render);
+ q.addEventListener('input', render);
+ render();
+</script>
+</body>
+</html>

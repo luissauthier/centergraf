@@ -1,0 +1,764 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>lhdigital — Simulador de Etiquetas</title>
+<link rel="icon" href="assets/favicon.ico" type="image/png">
+<meta name="description" content="Simule etiquetas P (40×10 mm) e G (75×40 mm). Escolha personagem e cor única (texto+borda) e envie o pedido no WhatsApp.">
+<meta name="theme-color" content="#0f1220">
+<style>
+  :root{
+    --bg:#0f1220; --card:#161a2b; --ink:#e8eaf6; --muted:#aab1d1;
+    --accent:#7aa5ff; --radius:14px; --gap:16px;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0; padding:0; overflow-x:hidden; background:#0b0e1a}
+  body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;background:linear-gradient(180deg,var(--bg),#0b0e1a);color:var(--ink)}
+  header,main,footer{max-width:1100px;margin:0 auto;padding:24px clamp(16px,3vw,24px)}
+  header h1{margin:0;font-size:22px;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+  header img.logo{width:36px;height:36px;object-fit:contain;border-radius:8px;background:transparent;flex:0 0 auto}
+  header p{margin:8px 0 0;color:var(--muted);font-size:14px}
+  .header-actions{margin-top:12px; display:flex; gap:10px; flex-wrap:wrap}
+
+  .grid{display:grid;gap:var(--gap); max-width:100%}
+  .cols{grid-template-columns:1fr 1fr}
+  @media (max-width:960px){.cols{grid-template-columns:1fr}}
+
+  .card{background:linear-gradient(180deg,rgba(255,255,255,.02),rgba(255,255,255,.01));border:1px solid rgba(255,255,255,.06);border-radius:var(--radius);box-shadow:0 12px 30px rgba(0,0,0,.25);padding:18px; overflow:hidden}
+  .card h2{margin:4px 0 14px;font-size:18px}
+  .row{display:grid;gap:12px;grid-template-columns:repeat(12,1fr);align-items:end; max-width:100%}
+  .row>*{min-width:0}
+  label{font-size:12px;color:var(--muted);display:block;margin:0 0 6px;white-space:nowrap}
+  input[type="text"], select{
+    width:100%;padding:10px 12px;background:#0c0f1c;color:var(--ink);
+    border:1px solid rgba(255,255,255,.08);border-radius:10px;outline:none;min-width:0
+  }
+  input[type="text"]{overflow-x:auto;text-overflow:clip}
+  input[type="color"]{width:100%;height:40px;border-radius:10px;border:1px solid rgba(255,255,255,.08);background:#0c0f1c}
+  .btn{display:inline-flex;align-items:center;justify-content:center;gap:10px;padding:12px 16px;border-radius:12px;border:1px solid rgba(255,255,255,.16);background:linear-gradient(160deg,var(--accent),#5dd4b5);color:#0a0d18;font-weight:700;text-decoration:none;cursor:pointer;flex:0 0 auto}
+  .btn.secondary{background:transparent;color:var(--ink)}
+  .btn.block{width:100%;justify-content:center}
+  .btns{display:flex;flex-wrap:wrap;gap:12px}
+  .tag{font-size:12px;color:var(--muted);margin:6px 0 12px}
+
+  /* canvases responsivos e “safe” no mobile */
+  .preview-grid{display:grid;gap:var(--gap);grid-template-columns:1fr 1fr; max-width:100%}
+  .preview-grid canvas{width:100%; height:auto; display:block; background:#fff;border-radius:12px;border:1px solid rgba(255,255,255,.08); max-width:100%}
+  @media (max-width:720px){
+    .preview-grid{grid-template-columns:1fr}
+  }
+
+  .preview-hint{
+    margin-top:12px;
+    font-size:13px;
+    color:var(--muted);
+    background:rgba(255,255,255,.04);
+    border:1px solid rgba(255,255,255,.06);
+    border-radius:12px;
+    padding:10px 12px;
+    text-align:center;
+  }
+
+  /* Galeria com limite e scroll */
+  .gallery-wrap{margin-top:8px}
+  .gallery{display:grid;gap:10px;grid-template-columns:repeat(6,1fr);max-height:240px;overflow:auto;padding:4px}
+  .card-img{background:#0c0f1c;border:1px solid rgba(255,255,255,.08);border-radius:12px;padding:8px;cursor:pointer;display:grid;gap:6px;place-items:center; min-width:0}
+  .card-img img{width:100%;height:92px;object-fit:contain}
+  .card-img span{font-size:12px;color:var(--muted);text-align:center}
+  .card-img.active{outline:2px solid #5dd4b5}
+
+  /* mobile: cards menores e scroll horizontal, sem estourar a largura */
+  @media (max-width:680px){
+    .gallery{display:flex;overflow-x:auto;overflow-y:hidden;gap:10px;max-height:none;padding:6px}
+    .card-img{min-width:88px;max-width:88px;flex:0 0 auto}
+    .card-img img{height:72px}
+  }
+
+  footer{color:var(--muted);font-size:12px;text-align:center}
+
+  /* Prévia primeiro no mobile */
+  @media (max-width:960px){
+    .section-preview{order:-1}
+  }
+
+  /* Seção de avisos */
+  .info{display:grid;gap:10px}
+  .note{font-size:12px;color:var(--muted);background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.06);border-radius:12px;padding:12px}
+  .note strong{color:var(--ink)}
+</style>
+</head>
+<body>
+<header>
+  <img class="logo" src="assets/logo.png" alt="lhdigital">
+  <h1>lhdigital — Simulador de Etiquetas</h1>
+  <p>Pré-visualize as etiquetas <strong>P (40×10 mm)</strong> e <strong>G (75×40 mm)</strong>, escolha personagem e cor única (texto+borda) e envie o pedido no WhatsApp.</p>
+  <div class="header-actions">
+    <a id="toCatalog" class="btn" href="/lhdigital-etiquetas/catalogo" rel="noopener">Ver catálogo</a>
+    <a class="btn secondary" href="#duvidas">Dúvidas & cuidados</a>
+  </div>
+</header>
+
+<main class="grid cols">
+  <!-- PRÉVIA -->
+  <section class="card section-preview" aria-labelledby="previa-title">
+    <h2 id="previa-title">Prévia — Etiquetas lado a lado</h2>
+    <p class="tag">Proporções reais: P = 40×10 mm • G = 75×40 mm.</p>
+    <div class="preview-grid">
+      <div>
+        <p class="tag">Modelo P (40×10 mm)</p>
+        <!-- canvas com resolução interna alta, mas responsivo no CSS -->
+        <canvas id="canvasP" width="400" height="100" aria-label="Prévia etiqueta P"></canvas>
+      </div>
+      <div>
+        <p class="tag">Modelo G (75×40 mm)</p>
+        <canvas id="canvasG" width="750" height="400" aria-label="Prévia etiqueta G"></canvas>
+      </div>
+      <div class="preview-hint" role="note">
+        Os tamanhos da fonte e da imagem poderão ser ajustados na versão final,
+        além de ser possível reposicioná-los. Para outras personalizações,
+        entre em contato pelo WhatsApp.
+      </div>
+    </div>
+  </section>
+
+  <!-- CONTROLES -->
+  <section class="card" aria-labelledby="controls">
+    <h2 id="controls">Editar modelo</h2>
+
+    <div class="row">
+      <div style="grid-column:span 9;">
+        <label for="nome">Nome na etiqueta</label>
+        <input id="nome" type="text" placeholder="Ex.: João Medeiros da Silva" maxlength="48" value="João Medeiros da Silva" autocomplete="name">
+      </div>
+      <div style="grid-column:span 3;">
+        <label for="corUnica">Cor (texto + borda)</label>
+        <input id="corUnica" type="color" value="#0000FF" aria-label="Selecionar cor">
+      </div>
+    </div>
+
+    <div class="row" style="margin-top:6px">
+      <div style="grid-column:span 6;">
+        <label style="display:flex; align-items:center; gap:8px; white-space:normal;">
+          <input id="chkTextos" type="checkbox">
+          Textos diferentes (P e G)
+        </label>
+      </div>
+
+      <div style="grid-column:span 6;">
+        <label style="display:flex; align-items:center; gap:8px; white-space:normal;">
+          <input id="chkFixarCor" type="checkbox">
+          Fixar cor (não mudar ao trocar personagem)
+        </label>
+      </div>
+    </div>
+
+    <div id="wrapNomeG" class="row" style="margin-top:6px; display:none">
+      <div style="grid-column:span 12;">
+        <label for="nomeG">Texto da etiqueta G (75×40 mm)</label>
+        <input id="nomeG" type="text" placeholder="Ex.: João Medeiros da Silva" maxlength="60" value="João Medeiros da Silva">
+      </div>
+    </div>
+
+    <div class="row" style="margin-top:6px">
+      <div style="grid-column:span 6;">
+        <label for="cartela">Cartela simulada</label>
+        <select id="cartela" aria-label="Escolher tipo de cartela">
+          <option value="A3 MIX">A3 MIX (120 P + 12 G)</option>
+          <option value="A3 P">A3 P (225 P)</option>
+          <option value="A3 G">A3 G (27 G)</option>
+        </select>
+      </div>
+      <div style="grid-column:span 6;">
+        <label>Personagem (escolha um card)</label>
+        <div class="tag">Para personalização, entre em contato pelo WhatsApp e solicite modelo.</div>
+      </div>
+    </div>
+
+    <div class="gallery-wrap">
+      <div id="galeria" class="gallery" aria-label="Galeria de personagens"></div>
+    </div>
+
+    <!-- Upload (fica invisível; acionado pelo card "Minha imagem") -->
+    <input
+      id="imgUpload"
+      type="file"
+      accept="image/png,image/jpeg,image/webp"
+      style="display:none"
+    />
+
+    <div class="note" style="margin-top:10px">
+      <strong>Quer usar uma imagem sua?</strong> Selecione o card <strong>Minha imagem</strong> e envie um arquivo.
+      <br>✅ Sugestão: imagem quadrada e nítida (ideal <strong>800×800 px</strong> ou maior). PNG com fundo transparente fica melhor.
+    </div>
+
+    <div class="btns" style="margin-top:14px">
+      <button id="btnWhats" class="btn" type="button" aria-label="Enviar pedido pelo WhatsApp">Enviar pedido no Whats</button>
+      <button id="btnDownload" class="btn secondary" type="button">Baixar prévia (PNG)</button>
+      <button id="btnReset" class="btn secondary" type="button">Resetar</button>
+    </div>
+  </section>
+
+  <!-- INFO / MENSAGENS -->
+  <section id="duvidas" class="card" aria-labelledby="infos-title">
+    <h2 id="infos-title">Dúvidas, personalizações e cuidados</h2>
+    <div class="info">
+      <div class="note">
+        <strong>Outras personalizações:</strong> trabalhamos com linha própria e <em>temas sob consulta</em>. Fale conosco pelo WhatsApp para cores, ícones e variações.
+      </div>
+      <div class="note">
+        <strong>Cuidados com o adesivo:</strong> após a entrega, o cliente é responsável pelo armazenamento e uso. Manter em <strong>local seco e arejado</strong>. Evite calor/umidade — o vinil pode encolher.
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer>© lhdigital — etiquetas escolares</footer>
+
+<!-- tenta usar Calibri local -->
+<style>
+  @font-face { font-family: "Calibri"; src: local("Calibri Bold"), local("Calibri"); font-weight: 700; font-style: normal; }
+</style>
+
+<script>
+/* ====== CONFIG ====== */
+// const WHATSAPP_NUMBER = '5551993745430'; // (55 + DDD + número)
+let WHATSAPP_NUMBER = '5551993745430';  // (55 + DDD + número)
+const CATALOG_URL = '/lhdigital-etiquetas/catalogo.html';
+
+/* Lista de personagens — padrão "Nenhum" (sem imagem) */
+const CHAR_LIST = [
+  { id:"nenhum", nome:"Nenhum", arquivo:null },
+  { id:"upload", nome:"Minha imagem", arquivo:null, isUpload:true },
+  { id:"moana", nome:"Moana", arquivo:"moana.png" },
+  { id:"guerreiraskpop", nome:"Guerreiras do KPop", arquivo:"guerreiraskpop.png" },
+  { id:"frozen", nome:"Frozen (Elsa)", arquivo:"frozen.png" },
+  { id:"barbie", nome:"Barbie", arquivo:"barbie.png" },
+  { id:"ladybug", nome:"Ladybug", arquivo:"ladybug.png" },
+  { id:"mcqueen", nome:"McQueen", arquivo:"mcqueen.png" },
+  { id:"eevee", nome:"Eevee", arquivo:"eevee.png" },
+  { id:"bulbasaur", nome:"Bulbasaur", arquivo:"bulbasaur.png" },
+  { id:"squirtle", nome:"Squirtle", arquivo:"squirtle.png" },
+  { id:"charmander", nome:"Charmander", arquivo:"charmander.png" },
+  { id:"pikachu", nome:"Pikachu", arquivo:"pikachu.png" },
+  { id:"minecraft", nome:"Minecraft", arquivo:"minecraft.png" },
+  { id:"luigi", nome:"Luigi", arquivo:"luigi.png" },
+  { id:"mario", nome:"Super Mario", arquivo:"mario.png" },
+  { id:"sonic", nome:"Sonic", arquivo:"sonic2.png" },
+  { id:"sonic2", nome:"Sonic (variante)", arquivo:"sonic.png" },
+  { id:"hulk", nome:"Hulk", arquivo:"hulk.png" },
+  { id:"capitao-america", nome:"Capitão América", arquivo:"capitao-america.png" },
+  { id:"homem-ferro", nome:"Homem de Ferro", arquivo:"homem-ferro.png" },
+  { id:"homem-aranha", nome:"Homem-Aranha", arquivo:"homem-aranha.png" },
+  { id:"galinha-pintadinha", nome:"Galinha Pintadinha", arquivo:"galinha-pintadinha.png" },
+  { id:"baby-shark", nome:"Baby Shark", arquivo:"baby-shark.png" },
+  { id:"gabbys", nome:"Gabby’s Dollhouse", arquivo:"gabbys.png" },
+  { id:"hello-kitty", nome:"Hello Kitty", arquivo:"hello-kitty.png" },
+  { id:"mickey-rosto", nome:"Mickey (rosto)", arquivo:"mickey-rosto.png" },
+  { id:"minnie-rosto", nome:"Minnie (rosto)", arquivo:"minnie-rosto.png" },
+  { id:"mickey", nome:"Mickey", arquivo:"mickey.png" },
+  { id:"minnie", nome:"Minnie", arquivo:"minnie.png" },
+  { id:"peppa", nome:"Peppa", arquivo:"peppa.png" },
+  { id:"chase", nome:"Chase (Patrulha Canina)", arquivo:"chase.png" },
+  { id:"marshal", nome:"Marshall (Patrulha Canina)", arquivo:"marshal.png" },
+  { id:"skye", nome:"Skye (Patrulha Canina)", arquivo:"skye.png" },
+  { id:"skye2", nome:"Skye (variante) (Patrulha Canina)", arquivo:"skye2.png" },
+  { id:"bluey", nome:"Bluey", arquivo:"bluey.png" },
+  { id:"stitch", nome:"Stitch", arquivo:"stitch.png" },
+  { id:"capivara", nome:"Capivara", arquivo:"capivara.png" },
+  { id:"unicornio", nome:"Unicórnio", arquivo:"unicornio.png" },
+  { id:"unicornio2", nome:"Unicórnio 2", arquivo:"unicornio2.png" },
+  { id:"stitch-angel", nome:"Stitch e Angel", arquivo:"stitch-angel.png" },
+  { id:"homem-aranha2", nome:"Homem-Aranha (variante)", arquivo:"homem-aranha2.png" },
+  { id:"hulk-baby", nome:"Hulk Baby", arquivo:"hulk-baby.png" },
+  { id:"carro-azul", nome:"Carro Azul", arquivo:"carro-azul.png" },
+  { id:"carro-laranja", nome:"Carro Laranja", arquivo:"carro-laranja.png" },
+  { id:"princesa-sofia", nome:"Princesa Sofia", arquivo:"princesa-sofia.png" },
+  { id:"gremio", nome:"Grêmio", arquivo:"gremio.png" },
+  { id:"inter", nome:"Inter", arquivo:"inter.png" },
+  { id:"cowboy", nome:"Cowboy", arquivo:"cowboy.png" },
+  { id:"roblox", nome:"Roblox", arquivo:"roblox.png" },  
+  { id:"dino", nome:"Dino", arquivo:"dino.png" },
+  { id:"dinossauro", nome:"Dinossauro", arquivo:"dinossauro.png" }
+];
+
+// Cores sugeridas por personagem (mesmas do catálogo)
+const COLOR_MAP = {
+  bluey: '#92C6EB',
+  chase: '#1B2B4E',
+  skye: '#EC5986',
+  skye2: '#EC5986',
+  marshal: '#E5050F',
+  peppa: '#FFB0DF',
+  gabbys: '#A600E2',
+  guerreiraskpop: '#EC268F',
+  frozen: '#6ED3E0',
+  moana: '#D63A2E',
+  barbie: '#E240A3',
+  ladybug: '#E5050F',
+  stitch: '#4A7BB5',
+  'stitch-angel': '#E39EC7',
+
+  'homem-aranha': '#E5050F',
+  'homem-aranha2': '#CF2A20',
+  'homem-ferro': '#E5050F',
+  hulk: '#5C8F4C',
+  'capitao-america': '#0D80BF',
+
+  minecraft: '#4DAC22',
+  roblox: '#E5050F',
+  sonic: '#14489F',
+  sonic2: '#3C6DFB',
+  mario: '#E5050F',
+  luigi: '#4DAC22',
+
+  pikachu: '#FAD61E',
+  bulbasaur: '#79A75B',
+  squirtle: '#52A3A9',
+  charmander: '#F47932',
+  eevee: '#BD8946',
+
+  gremio: '#0D80BF',
+  inter: '#E5050F',
+
+  mcqueen: '#E5050F',
+  'carro-azul': '#2A7CD3',
+  'carro-laranja': '#F58634',
+
+  minnie: '#E5050F',
+  mickey: '#E5050F',
+  'hello-kitty': '#EE3E41',
+
+  unicornio: '#DFAFF6',
+  unicornio2: '#EC268F',
+  capivara: '#F58634',
+  cowboy: '#A96A23',
+  dino: '#4DAC22',
+  dinossauro: '#4DAC22'
+};
+
+// Injeta a cor sugerida no CHAR_LIST sem precisar duplicar manualmente
+CHAR_LIST.forEach(c => {
+  if (!c.cor && COLOR_MAP[c.id]) c.cor = COLOR_MAP[c.id];
+});
+
+/* tamanhos em px (10 px/mm) */
+const SIZE = {
+  P: { w: 400, h: 100, imgMaxW: 60,  imgMaxH: 80,  pt: 12 }, // 40×10 mm
+  G: { w: 750, h: 400, imgMaxW: 230, imgMaxH: 300, pt: 21 }  // 75×40 mm
+};
+
+const el = id => document.getElementById(id);
+const nome = el('nome');
+const corUnica = el('corUnica');
+const chkTextos = el('chkTextos');
+const wrapNomeG = el('wrapNomeG');
+const nomeG = el('nomeG');
+const chkFixarCor = el('chkFixarCor');
+
+const cartela = el('cartela');
+const canvasP = el('canvasP');
+const canvasG = el('canvasG');
+const btnWhats = el('btnWhats');
+const btnDownload = el('btnDownload');
+const btnReset = el('btnReset');
+const galeria = el('galeria');
+
+const imgUpload = el('imgUpload');
+
+let uploadImg = null;       // Image carregada do arquivo do usuário
+let uploadInfo = null;      // { name, size, type, w, h }
+
+// --- NOVO: controles via URL para parceiros ---
+const qs = new URLSearchParams(location.search);
+const personaId = qs.get('personagem');
+const corParam = qs.get('cor');
+
+// esconder botão do Whats quando for uso em papelaria
+const modoPapelaria = qs.has('papelaria') || qs.get('hidewhats') === '1';
+if (modoPapelaria) {
+  // some visualmente (mantém no DOM para não quebrar listeners abaixo)
+  btnWhats.style.display = 'none';
+}
+
+// Propaga parâmetros entre telas (?papelaria, ?hidewhats=1, ?zap)
+const passParams = new URLSearchParams();
+['papelaria','hidewhats','zap'].forEach(k=>{
+  if (qs.has(k)) passParams.set(k, qs.get(k) || '');
+});
+
+// Ajusta o link "Ver catálogo" para levar os mesmos parâmetros
+const toCatalog = document.getElementById('toCatalog');
+if (toCatalog) {
+  const base = (typeof CATALOG_URL !== 'undefined' && CATALOG_URL) ? CATALOG_URL : 'catalogo.html';
+  toCatalog.href = base + (passParams.toString() ? `?${passParams}` : '');
+}
+
+// (opcional) permitir sobrescrever o número do Whats por parâmetro: ?zap=55DDDNXXXXXXXX
+// mude "const WHATSAPP_NUMBER" para "let WHATSAPP_NUMBER" lá no topo do arquivo!
+if (qs.has('zap')) {
+  WHATSAPP_NUMBER = qs.get('zap').replace(/[^\d]/g, '');
+}
+
+let personagemAtual = CHAR_LIST[0]; // começa em "Nenhum"
+let imgCache = {};
+
+function montarGaleria(){
+  galeria.innerHTML = '';
+  CHAR_LIST.forEach((c,i)=>{
+    const wrap = document.createElement('button');
+    wrap.type = 'button';
+    wrap.className = 'card-img';
+    wrap.setAttribute('data-id', c.id);
+    wrap.setAttribute('aria-pressed', i===0 ? 'true' : 'false');
+    const imgTag = c.isUpload
+    ? `<img alt="Minha imagem" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='120'%3E%3Crect width='100%25' height='100%25' rx='16' ry='16' fill='%230c0f1c' stroke='%235dd4b5' stroke-dasharray='0'/%3E%3Ctext x='50%25' y='52%25' fill='%23e8eaf6' font-size='28' font-family='Arial' text-anchor='middle'%3E%2B%3C/text%3E%3C/svg%3E">`
+    : c.arquivo
+      ? `<img alt="${c.nome}" src="assets/personagens/${c.arquivo}" loading="lazy">`
+      : `<img alt="Nenhum" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='120'%3E%3Crect width='100%25' height='100%25' rx='16' ry='16' fill='%230c0f1c' stroke='%23aab1d1' stroke-dasharray='6%2C6'/%3E%3Cpath d='M20 100 L140 20' stroke='%23aab1d1' stroke-width='10'/%3E%3C/svg%3E">`;
+    wrap.innerHTML = `${imgTag}<span>${c.nome}</span>`;
+    wrap.addEventListener('click', ()=>{
+      document.querySelectorAll('.card-img').forEach(b=>{
+        b.classList.remove('active');
+        b.setAttribute('aria-pressed','false');
+      });
+      wrap.classList.add('active');
+      wrap.setAttribute('aria-pressed','true');
+      personagemAtual = c;
+      if (c.isUpload) {
+        if (imgUpload) imgUpload.click();
+        return; // não chama render aqui; vai renderizar quando a imagem carregar
+      }
+      // Se clicou em qualquer outro, limpa upload
+      limparUpload();
+      aplicarCorDoPersonagem(c);
+      if(c.arquivo) carregarImagem(c).then(renderAll); else renderAll();
+    });
+    galeria.appendChild(wrap);
+    if(i===0){ wrap.classList.add('active'); } // "Nenhum" marcado
+  });
+}
+
+function carregarImagem(c){
+  if(!c.arquivo) return Promise.resolve(null);
+  if(imgCache[c.id]) return Promise.resolve(imgCache[c.id]);
+  return new Promise((res, rej)=>{
+    const im = new Image();
+    im.onload = ()=>{ imgCache[c.id] = im; res(im); };
+    im.onerror = rej;
+    im.src = `assets/personagens/${c.arquivo}`;
+  });
+}
+
+function carregarImagemUpload(file){
+  return new Promise((resolve, reject) => {
+    const url = URL.createObjectURL(file);
+    const im = new Image();
+    im.onload = () => {
+      resolve({ im, url });
+    };
+    im.onerror = () => {
+      URL.revokeObjectURL(url);
+      reject(new Error('Falha ao carregar imagem.'));
+    };
+    im.src = url;
+  });
+}
+
+function limparUpload(){
+  uploadImg = null;
+  uploadInfo = null;
+  if (imgUpload) imgUpload.value = '';
+}
+
+/* conversão pt -> px (~3.528 px/pt) */
+const PT_TO_PX = 3.528;
+
+/* layout de texto com auto-ajuste */
+function layoutText(ctx, text, fontFamily, targetPt, maxWidth, maxLines){
+  let sizePx = Math.round(targetPt * PT_TO_PX);
+  for(let tries=0; tries<40; tries++){
+    ctx.font = `700 ${sizePx}px "${fontFamily}", "Segoe UI", Arial, sans-serif`;
+    const lines = [];
+    const words = (text||'').trim().split(/\s+/);
+    let line = '';
+    for(const w of words){
+      const test = line ? line + ' ' + w : w;
+      if(ctx.measureText(test).width <= maxWidth){ line = test; }
+      else { if(line) lines.push(line); line = w; }
+    }
+    if(line) lines.push(line);
+    const widest = Math.max(...lines.map(l=>ctx.measureText(l).width));
+    if(lines.length <= maxLines && widest <= maxWidth) return { sizePx, lines };
+    sizePx = Math.max(sizePx-2, 10);
+  }
+  return { sizePx: 10, lines: [text] };
+}
+
+function roundRectPath(ctx, x,y,w,h,r){
+  const rr = Math.min(r, Math.min(w,h)/2);
+  ctx.moveTo(x+rr, y);
+  ctx.arcTo(x+w, y, x+w, y+h, rr);
+  ctx.arcTo(x+w, y+h, x, y+h, rr);
+  ctx.arcTo(x, y+h, x, y, rr);
+  ctx.arcTo(x, y, x+w, y, rr);
+  ctx.closePath();
+}
+
+function desenhar(canvas, opts){
+  const ctx = canvas.getContext('2d');
+  const w = canvas.width, h = canvas.height;
+  ctx.clearRect(0,0,w,h);
+
+  // fundo + moldura
+  ctx.fillStyle = '#fff';
+  ctx.fillRect(0,0,w,h);
+  const radius = Math.round(h*0.25);
+  ctx.lineWidth = Math.max(4, Math.round(h*0.06));
+  ctx.strokeStyle = opts.color;
+  ctx.beginPath();
+  const x=6,y=6,bw=w-12,bh=h-12;
+  roundRectPath(ctx,x,y,bw,bh,radius);
+  ctx.stroke();
+
+  let img = opts.image;
+  const hasImg = !!img;
+
+  // imagem (se houver)
+  let imgW=0,imgH=0,ix=0,iy=0;
+  if(hasImg){
+    const ratio = Math.min(opts.imgMaxW/img.width, opts.imgMaxH/img.height);
+    imgW = Math.round(img.width * ratio);
+    imgH = Math.round(img.height * ratio);
+    ix = Math.round(x + radius*0.4);
+    iy = Math.round(y + (bh - imgH)/2);
+    ctx.drawImage(img, ix, iy, imgW, imgH);
+  }
+
+  // texto
+  ctx.fillStyle = opts.color;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+
+  const paddingLeft = hasImg ? (ix + imgW + Math.round(w*0.04)) : (x + Math.round(w*0.08));
+  const maxTextWidth = hasImg ? (x + bw - paddingLeft - radius*0.3) : (bw - (w*0.16));
+
+  const { sizePx, lines } = layoutText(ctx, opts.text, opts.fontFamily, opts.pt, maxTextWidth, opts.maxLines||3);
+  ctx.font = `700 ${sizePx}px "${opts.fontFamily}", "Segoe UI", Arial, sans-serif`;
+  const lineHeight = sizePx * 1.1;
+  const totalH = lineHeight * lines.length;
+
+  const tx = hasImg ? paddingLeft + maxTextWidth/2 : w/2;
+  const ty = h/2;
+  lines.forEach((ln,i)=> ctx.fillText(ln, tx, ty - totalH/2 + i*lineHeight + lineHeight/2) );
+}
+
+function aplicarCorSePermitido(hex){
+  if (!hex) return;
+  if (chkFixarCor && chkFixarCor.checked) return;
+
+  let v = String(hex).trim();
+  if (/^[0-9A-Fa-f]{6}$/.test(v)) v = '#' + v; // aceita sem #
+  if (/^#[0-9A-Fa-f]{6}$/.test(v)) {
+    corUnica.value = v;
+  }
+}
+
+function atualizarModoTextos() {
+  const ativo = chkTextos.checked;
+
+  wrapNomeG.style.display = ativo ? '' : 'none';
+
+  if (!ativo) {
+    // quando desativado, mantém G igual ao P
+    nomeG.value = nome.value;
+  }
+
+  renderAll();
+}
+
+chkTextos.addEventListener('change', atualizarModoTextos);
+
+// se o usuário digitar no nome P e o modo estiver desativado, replica pro nomeG
+nome.addEventListener('input', () => {
+  if (!chkTextos.checked) nomeG.value = nome.value;
+});
+
+function aplicarCorDoPersonagem(c) {
+  // se estiver fixado, não mexe
+  if (chkFixarCor && chkFixarCor.checked) return;
+
+  // se o personagem tiver cor sugerida, aplica
+  if (c && c.cor) {
+    corUnica.value = c.cor;
+  }
+}
+
+function renderAll(){
+  const color = corUnica.value;
+  const nomeTxtP = (nome.value || 'Seu Nome').trim();
+  const nomeTxtG = (chkTextos.checked ? (nomeG.value || nomeTxtP) : nomeTxtP).trim();
+  const fontFamily = 'Calibri';
+
+  let img = null;
+  if (personagemAtual && personagemAtual.isUpload) {
+    img = uploadImg;
+  } else {
+    img = (personagemAtual && personagemAtual.arquivo) ? imgCache[personagemAtual.id] : null;
+  }
+
+  desenhar(canvasP, { color, text: nomeTxtP, image: img, fontFamily, imgMaxW: SIZE.P.imgMaxW, imgMaxH: SIZE.P.imgMaxH, pt: SIZE.P.pt, maxLines: 2 });
+  desenhar(canvasG, { color, text: nomeTxtG, image: img, fontFamily, imgMaxW: SIZE.G.imgMaxW, imgMaxH: SIZE.G.imgMaxH, pt: SIZE.G.pt, maxLines: 3 });
+}
+
+/* WhatsApp — template com preço, entrada e prazo */
+/* const TEMPLATE = (data) =>
+  `📃 *Pedido de etiquetas escolares — lhdigital* %0A%0A` +
+  `Olá! Gostaria de fazer um pedido de etiquetas personalizadas:%0A%0A` +
+  `• *Cartela:* ${encodeURIComponent(data.cartela)}%0A` +
+  `• *Nome na etiqueta:* ${encodeURIComponent(data.nome)}%0A` +
+  `• *Tema/Personagem:* ${encodeURIComponent(data.personagem)}%0A` +
+  `• *Cor (texto + borda):* ${encodeURIComponent(data.cor)}%0A%0A` +
+  `(Prévia gerada no simulador lhdigital — via Site)`;
+*/
+
+// btnWhats.addEventListener('click', ()=>{
+//   const personagem = personagemAtual ? personagemAtual.nome : 'Nenhum';
+//   const text = TEMPLATE({ cartela: cartela.value, nome: nome.value || '—', personagem, cor: corUnica.value });
+//   window.open(`https://wa.me/${WHATSAPP_NUMBER}?type=phone_number&text=${text}`,'_blank');
+// });
+
+btnWhats.addEventListener('click', () => {
+  const personagem = (personagemAtual && personagemAtual.isUpload)
+  ? `Minha imagem (upload)${uploadInfo?.name ? ` — ${uploadInfo.name}` : ''}`
+  : (personagemAtual ? personagemAtual.nome : 'Nenhum');
+  const nomeP = (nome.value || '—').trim();
+  const nomeGtxt = chkTextos.checked ? (nomeG.value || '—').trim() : nomeP;
+
+  const msgLinhas = [
+    "🧾 *Pedido de etiquetas escolares — lhdigital (via Site)*",
+    "",
+    "Olá! Gostaria de fazer um pedido de etiquetas personalizadas:",
+    "",
+    `• *Cartela:* ${cartela.value}`,
+    chkTextos.checked ? `• *Texto P:* ${nomeP}` : `• *Nome na etiqueta:* ${nomeP}`,
+    chkTextos.checked ? `• *Texto G:* ${nomeGtxt}` : null,
+    `• *Tema/Personagem:* ${personagem}`,
+    `• *Cor (texto + borda):* ${corUnica.value}`
+  ].filter(Boolean);
+
+  const msg = msgLinhas.join("\n"); // <- quebras reais aqui
+
+  const params = new URLSearchParams();
+  params.set("phone", WHATSAPP_NUMBER);
+  params.set("text", msg);
+
+  const url = `https://api.whatsapp.com/send?${params.toString()}`;
+  window.open(url, "_blank");
+});
+
+btnDownload.addEventListener('click', ()=>{
+  const w = Math.max(canvasP.width, canvasG.width);
+  const gap = 40;
+  const out = document.createElement('canvas');
+  out.width = w;
+  out.height = canvasP.height + gap + canvasG.height;
+  const ctx = out.getContext('2d');
+  ctx.fillStyle = '#fff'; ctx.fillRect(0,0,out.width,out.height);
+  ctx.drawImage(canvasP, (w - canvasP.width)/2, 0);
+  ctx.fillStyle = '#e5e7eb'; ctx.fillRect(0, canvasP.height + gap/2 - 1, w, 2);
+  ctx.drawImage(canvasG, (w - canvasG.width)/2, canvasP.height + gap);
+  const a = document.createElement('a');
+  a.download = `previa_${(nome.value||'etiquetas').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]+/g,'-')}.png`;
+  a.href = out.toDataURL('image/png');
+  a.click();
+});
+
+btnReset.addEventListener('click', ()=>{
+  limparUpload();
+  nome.value = 'João Medeiros da Silva';
+  corUnica.value = '#0000FF';
+  cartela.value = 'A3 MIX';
+
+  chkTextos.checked = false;
+  chkFixarCor.checked = false;
+
+  nomeG.value = nome.value;
+  wrapNomeG.style.display = 'none';
+
+  document.querySelector('.card-img[data-id="nenhum"]')?.click();
+  renderAll();
+});
+
+imgUpload.addEventListener('change', async () => {
+  const file = imgUpload.files && imgUpload.files[0];
+  if (!file) return;
+
+  // limite de tamanho (5MB)
+  const MAX_MB = 5;
+  if (file.size > MAX_MB * 1024 * 1024) {
+    alert(`Arquivo muito grande. Envie até ${MAX_MB} MB.`);
+    limparUpload();
+    // volta pro "Nenhum"
+    document.querySelector('.card-img[data-id="nenhum"]')?.click();
+    return;
+  }
+
+  try {
+    const { im, url } = await carregarImagemUpload(file);
+
+    // guarda info
+    uploadImg = im;
+    uploadInfo = { name: file.name, size: file.size, type: file.type, w: im.width, h: im.height };
+
+    // dica rápida de qualidade (sem bloquear)
+    if (im.width < 400 || im.height < 400) {
+      // só avisa; não impede
+      console.log('Imagem pequena; pode ficar pixelada.');
+    }
+
+    // garante que o "card upload" fique ativo (caso o user tenha cancelado e voltado etc.)
+    const btn = document.querySelector(`.card-img[data-id="upload"]`);
+    if (btn) {
+      document.querySelectorAll('.card-img').forEach(b=>{
+        b.classList.remove('active');
+        b.setAttribute('aria-pressed','false');
+      });
+      btn.classList.add('active');
+      btn.setAttribute('aria-pressed','true');
+    }
+
+    // renderiza usando upload
+    renderAll();
+
+    // libera URL quando não precisar mais (se quiser manter a imagem viva, pode não revogar aqui)
+    // URL.revokeObjectURL(url);
+  } catch (e) {
+    alert('Não foi possível carregar a imagem. Tente outro arquivo.');
+    limparUpload();
+    document.querySelector('.card-img[data-id="nenhum"]')?.click();
+  }
+});
+
+/* eventos */
+[nome, nomeG, corUnica, cartela].forEach(i=>{
+  i.addEventListener('input', renderAll);
+  i.addEventListener('change', renderAll);
+});
+
+/* init */
+montarGaleria();
+
+if (personaId) {
+  const btn = document.querySelector(`.card-img[data-id="${CSS.escape(personaId)}"]`);
+  if (btn) btn.click();
+}
+
+// por último, aplica cor do parâmetro (se veio) e respeita "Fixar cor"
+aplicarCorSePermitido(corParam);
+
+if (!personaId) renderAll();
+
+</script>
+</body>
+</html>
