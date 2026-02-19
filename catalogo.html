@@ -22,8 +22,8 @@
       </div>
 
       <nav class="header-nav desktop-nav">
-        <a href="/centergraf/catalogo">Catálogo</a>
-        <a href="/centergraf/" class="active">Simulador</a>
+        <a href="/centergraf/">Simulador</a>
+        <a href="/centergraf/catalogo" class="active">Catálogo</a>
         <a href="/centergraf/#duvidas">Ajuda</a>
       </nav>
 
@@ -43,8 +43,8 @@
 
   <!-- Menu lateral -->
   <div class="mobile-menu" id="mobileMenu">
-    <a href="/centergraf/catalogo">Catálogo</a>
     <a href="/centergraf/">Simulador</a>
+    <a href="/centergraf/catalogo">Catálogo</a>
     <a href="/centergraf/#duvidas">Ajuda</a>
     <a href="https://wa.me/555137821165" target="_blank" class="btn whats block">
       Entre em contato
@@ -63,6 +63,8 @@
     </p>
 
     <div class="controls">
+      <input id="q" type="search" placeholder="Buscar por tema…">
+
       <select id="catSelect">
         <option value="">Categoria: Todas</option>
         <option>Desenhos & Séries</option>
@@ -80,14 +82,12 @@
         <option>Tier B</option>
         <option>Tier C</option>
       </select>
-
-      <input id="q" type="search" placeholder="Buscar por nome ou tema…">
     </div>
 
     <div id="list" class="grid" aria-live="polite"></div>
   </main>
 
-  <footer>© lhdigital — etiquetas escolares</footer>
+  <footer>© lhdigital — sites personalizados</footer>
 
   <script>
     // CONFIG

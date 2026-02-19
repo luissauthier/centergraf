@@ -225,22 +225,22 @@ const SVG_GEN = (() => {
   }
 
   function buildSvgHeader({ viewBox }) {
-  // A3 em mm
-  const A3_W_MM = 310;
-  const A3_H_MM = 430;
+    // A3 em mm
+    const A3_W_MM = 310;
+    const A3_H_MM = 430;
 
-  const vb = viewBox
-    ? `${viewBox.x} ${viewBox.y} ${viewBox.w} ${viewBox.h}`
-    : `0 0 ${A3_W_MM} ${A3_H_MM}`;
+    const vb = viewBox
+      ? `${viewBox.x} ${viewBox.y} ${viewBox.w} ${viewBox.h}`
+      : `0 0 ${A3_W_MM} ${A3_H_MM}`;
 
-  return `<?xml version="1.0" encoding="UTF-8"?>
+    return `<?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg"
      xmlns:xlink="http://www.w3.org/1999/xlink"
      width="${A3_W_MM}mm"
      height="${A3_H_MM}mm"
      viewBox="${vb}">
 `;
-}
+  }
 
   function escapeXml(s) {
     return String(s ?? '')
@@ -474,13 +474,18 @@ const SVG_GEN = (() => {
   }
 
   async function downloadSvgAsPdf(svgText, filename) {
+    if (!window.jspdf || !window.svg2pdf) {
+      alert("As bibliotecas de PDF ainda estão carregando. Por favor, aguarde um segundo e tente novamente.");
+      return;
+    }
     const { jsPDF } = window.jspdf;
 
     const parser = new DOMParser();
     const svgEl = parser.parseFromString(svgText, "image/svg+xml").querySelector("svg");
 
-    const wMm = parseFloat(svgEl.getAttribute("width"));
-    const hMm = parseFloat(svgEl.getAttribute("height"));
+    // Converte largura/altura de mm para o formato PDF
+    const wMm = parseFloat(svgEl.getAttribute("width")) || 310;
+    const hMm = parseFloat(svgEl.getAttribute("height")) || 430;
 
     const pdf = new jsPDF({
       orientation: wMm > hMm ? "landscape" : "portrait",

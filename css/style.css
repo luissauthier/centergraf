@@ -3,7 +3,7 @@
   --card: #161a2b;
   --ink: #e8eaf6;
   --muted: #aab1d1;
-  --accent-gradient: linear-gradient(135deg, #f6e64b, #37a9e1, #f05397);
+  --accent-gradient: linear-gradient(135deg, #37a9e1, #2a7cd3);
   --radius: 14px;
   --gap: 16px;
 }
@@ -80,8 +80,8 @@ footer {
 }
 
 .btn.whats {
-  background: linear-gradient(160deg, #25D366, #1ebe5d);
-  color: #0a0d18
+  background: var(--accent-gradient);
+  color: #fff;
 }
 
 /* Header padrão (igual ao simulador) */
