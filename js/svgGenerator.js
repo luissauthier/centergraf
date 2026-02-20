@@ -162,35 +162,34 @@ const SVG_GEN = (() => {
   }
 
   function extractSlotsFromFaca(svgEl, unitPerMm) {
-    // Pega todos os shapes “prováveis” (rect e path) e usa getBBox()
-    const shapes = [
-      ...svgEl.querySelectorAll('rect, path, polygon, polyline')
-    ];
-
-    // Filtra:
-    // - ignora shapes gigantes (bordas da página)
-    // - ignora elementos com display none
-    // - ignora preenchidos sólidos (normalmente faca é stroke e fill none)
+    const shapes = [...svgEl.querySelectorAll('rect, path, polygon, polyline')];
     const candidates = [];
+
     for (const el of shapes) {
       const style = window.getComputedStyle(el);
       if (style.display === 'none' || style.visibility === 'hidden') continue;
 
-      let bb;
-      try { bb = el.getBBox(); } catch { continue; }
+      let bb_raw;
+      try { bb_raw = el.getBBox(); } catch { continue; }
+      if (!bb_raw || bb_raw.width <= 0 || bb_raw.height <= 0) continue;
 
-      if (!bb || bb.width <= 0 || bb.height <= 0) continue;
-
-      // ignora muito grande (provável moldura geral)
-      if (bb.width > 0.95 * svgEl.viewBox.baseVal.width && bb.height > 0.2 * svgEl.viewBox.baseVal.height) {
-        continue;
+      // Preferências por atributos diretos (mais preciso que getBBox)
+      let bx = bb_raw.x, by = bb_raw.y, bw = bb_raw.width, bh = bb_raw.height;
+      if (el.tagName === 'rect') {
+        const ax = parseFloat(el.getAttribute('x'));
+        const ay = parseFloat(el.getAttribute('y'));
+        const aw = parseFloat(el.getAttribute('width'));
+        const ah = parseFloat(el.getAttribute('height'));
+        if (isFinite(ax)) bx = ax;
+        if (isFinite(ay)) by = ay;
+        if (isFinite(aw)) bw = aw;
+        if (isFinite(ah)) bh = ah;
       }
 
-      // pega mm aproximado pra classificar
-      const wMm = bb.width / unitPerMm;
-      const hMm = bb.height / unitPerMm;
+      if (bw > 0.95 * svgEl.viewBox.baseVal.width && bh > 0.2 * svgEl.viewBox.baseVal.height) continue;
 
-      // Mantém só o que parece etiqueta (perto das medidas)
+      const wMm = bw / unitPerMm;
+      const hMm = bh / unitPerMm;
       const near = (a, b, tol) => Math.abs(a - b) <= tol;
 
       const isP = near(wMm, CUT.P.wMm, 2.0) && near(hMm, CUT.P.hMm, 2.0);
@@ -199,46 +198,43 @@ const SVG_GEN = (() => {
       if (!isP && !isG) continue;
 
       candidates.push({
-        x: bb.x,
-        y: bb.y,
-        w: bb.width,
-        h: bb.height,
+        x: bx,
+        y: by,
+        w: bw,
+        h: bh,
         tipo: isP ? 'P' : 'G'
       });
     }
 
-    // Ordena por linha/coluna para estabilidade
     candidates.sort((a, b) => (a.y - b.y) || (a.x - b.x));
 
-    // Remove duplicatas (às vezes SVG tem stroke duplicado)
     const out = [];
-    const key = (s) => `${Math.round(s.x)}_${Math.round(s.y)}_${Math.round(s.w)}_${Math.round(s.h)}_${s.tipo}`;
     const seen = new Set();
     for (const s of candidates) {
-      const k = key(s);
+      const k = `${s.x.toFixed(2)}_${s.y.toFixed(2)}_${s.w.toFixed(2)}_${s.h.toFixed(2)}_${s.tipo}`;
       if (seen.has(k)) continue;
       seen.add(k);
       out.push(s);
     }
-
     return out;
   }
 
-  function buildSvgHeader({ viewBox }) {
-    // A3 em mm
-    const A3_W_MM = 310;
-    const A3_H_MM = 430;
+  function buildSvgHeader({ viewBox, widthAttr, heightAttr }) {
+    // Identidade visual 1:1 com a faca
+    const w = widthAttr || '310mm';
+    const h = heightAttr || '430mm';
 
     const vb = viewBox
       ? `${viewBox.x} ${viewBox.y} ${viewBox.w} ${viewBox.h}`
-      : `0 0 ${A3_W_MM} ${A3_H_MM}`;
+      : `0 0 310 430`;
 
     return `<?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg"
      xmlns:xlink="http://www.w3.org/1999/xlink"
-     width="${A3_W_MM}mm"
-     height="${A3_H_MM}mm"
-     viewBox="${vb}">
+     width="${w}"
+     height="${h}"
+     viewBox="${vb}"
+     xml:space="preserve">
 `;
   }
 
@@ -360,8 +356,10 @@ const SVG_GEN = (() => {
     // Cabeçalho com tamanho exatamente igual à faca (escala 1:1)
     let svgArte = buildSvgHeader(page);
 
-    // Fundo A3 inteiro (sangria) = cor
-    svgArte += `<rect x="0" y="0" width="${page.pageUnitsW}" height="${page.pageUnitsH}" fill="${escapeXml(corHex)}" />\n`;
+    // Fundo A3 inteiro (sangria) = cor - usando viewBox original
+    const bgX = page.viewBox ? page.viewBox.x : 0;
+    const bgY = page.viewBox ? page.viewBox.y : 0;
+    svgArte += `<rect x="${bgX}" y="${bgY}" width="${page.pageUnitsW}" height="${page.pageUnitsH}" fill="${escapeXml(corHex)}" />\n`;
 
     // Imagem do personagem (embed)
     let imgDataUrl = null;
@@ -380,10 +378,9 @@ const SVG_GEN = (() => {
       const y = s.y + (s.h - safeH) / 2;
 
       // Retângulo branco (arte)
-      // const rx = Math.min(safeH * 0.25, safeW * 0.15); // arredondamento agradável
       const radiusMm = (s.tipo === 'P') ? 1.8 : 4.0;
       const rx = mmToDocUnits(radiusMm, unitPerMm);
-      svgArte += `<rect x="${x}" y="${y}" width="${safeW}" height="${safeH}" rx="${rx}" ry="${rx}" fill="#ffffff" />\n`;
+      svgArte += `<rect x="${x.toFixed(4)}" y="${y.toFixed(4)}" width="${safeW.toFixed(4)}" height="${safeH.toFixed(4)}" rx="${rx.toFixed(4)}" ry="${rx.toFixed(4)}" fill="#ffffff" />\n`;
 
       // Layout interno: reserva área para imagem + texto
       const padding = Math.min(safeW, safeH) * 0.10;
@@ -406,18 +403,15 @@ const SVG_GEN = (() => {
 
       // Desenha imagem (à esquerda)
       if (hasImg) {
-        const imgX = innerX;
-        const imgY = innerY;
-        svgArte += `<image x="${imgX}" y="${imgY}" width="${imgBoxW}" height="${imgBoxH}" preserveAspectRatio="xMidYMid meet" href="${imgDataUrl}" />\n`;
+        svgArte += `<image x="${innerX.toFixed(4)}" y="${innerY.toFixed(4)}" width="${imgBoxW.toFixed(4)}" height="${imgBoxH.toFixed(4)}" preserveAspectRatio="xMidYMid meet" href="${imgDataUrl}" />\n`;
       }
 
       // Texto em curva (path)
       const txt = (s.tipo === 'P') ? (textoP || '') : (textoG || textoP || '');
 
-      // Tamanho inicial em “doc units”: converte mm aproximado pra fonte
       const startSize = s.tipo === 'P'
-        ? mmToDocUnits(2.9, unitPerMm)   // ~2.9mm
-        : mmToDocUnits(5.0, unitPerMm);  // ~5mm
+        ? mmToDocUnits(2.9, unitPerMm)
+        : mmToDocUnits(5.0, unitPerMm);
 
       const minSize = s.tipo === 'P'
         ? mmToDocUnits(2.0, unitPerMm)
@@ -426,7 +420,21 @@ const SVG_GEN = (() => {
       const maxLines = s.tipo === 'P' ? 2 : 3;
 
       const { size, lines } = fitTextToBox(font, txt, textBoxW, maxLines, startSize, minSize);
-      svgArte += textLinesToPathSvg(font, lines, textCenterX, textCenterY, size, escapeXml(corHex), 1.12) + '\n';
+
+      // Converte cada linha em path e usa toFixed(4) internamente
+      const paths = [];
+      const lh = size * 1.12;
+      const totalH = lh * lines.length;
+      const topY = textCenterY - totalH / 2 + lh * 0.8;
+
+      lines.forEach((ln, i) => {
+        const adv = font.getAdvanceWidth(ln, size);
+        const tx = textCenterX - adv / 2;
+        const ty = topY + i * lh;
+        const p = font.getPath(ln, tx, ty, size);
+        paths.push(`<path d="${p.toPathData(2)}" fill="${escapeXml(corHex)}" />`);
+      });
+      svgArte += paths.join('\n') + '\n';
     }
 
     svgArte += `</svg>`;
@@ -483,20 +491,23 @@ const SVG_GEN = (() => {
     const parser = new DOMParser();
     const svgEl = parser.parseFromString(svgText, "image/svg+xml").querySelector("svg");
 
-    // Converte largura/altura de mm para o formato PDF
-    const wMm = parseFloat(svgEl.getAttribute("width")) || 310;
-    const hMm = parseFloat(svgEl.getAttribute("height")) || 430;
+    // Converte largura/altura de mm para o formato PDF com máxima precisão
+    const wMm = lengthToMm(svgEl.getAttribute("width")) || 310;
+    const hMm = lengthToMm(svgEl.getAttribute("height")) || 430;
 
     const pdf = new jsPDF({
       orientation: wMm > hMm ? "landscape" : "portrait",
       unit: "mm",
-      format: [wMm, hMm]
+      format: [wMm, hMm],
+      putOnlyUsedFonts: true,
+      compress: true
     });
 
     await window.svg2pdf.svg2pdf(svgEl, pdf, {
       xOffset: 0,
       yOffset: 0,
-      scale: 1
+      width: wMm,
+      height: hMm
     });
 
     pdf.save(filename);
